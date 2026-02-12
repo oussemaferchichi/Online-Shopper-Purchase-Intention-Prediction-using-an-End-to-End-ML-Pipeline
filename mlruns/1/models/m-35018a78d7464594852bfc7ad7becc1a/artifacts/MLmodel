@@ -1,0 +1,24 @@
+artifact_path: file:///C:/Users/victus/Desktop/Online Shopper Purchase Intention Prediction
+  using an End-to-End ML Pipeline/mlruns/1/models/m-35018a78d7464594852bfc7ad7becc1a/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.12.5
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.9.0
+model_id: m-35018a78d7464594852bfc7ad7becc1a
+model_size_bytes: 321453
+model_uuid: m-35018a78d7464594852bfc7ad7becc1a
+prompts: null
+run_id: 38ea80546df34906a09e65f6764a3214
+utc_time_created: '2026-02-12 12:32:24.518517'

@@ -46,24 +46,43 @@ The dataset exhibits significant class imbalance with approximately **15% purcha
 Online Shopper Purchase Intention Prediction using an End-to-End ML Pipeline/
 │
 ├── code/                           # Source code for preprocessing and modeling
+│   ├── preprocessing.py            # Data preprocessing pipeline
+│   └── train_models.py             # Model training with MLFlow tracking
 │
 ├── data/                           # Dataset and visualizations
 │   ├── online_shoppers_intention.csv
-│   └── plots/                      # EDA visualizations (generated from notebook)
+│   ├── plots/                      # EDA and model visualizations
+│   ├── X_train.pkl                 # Preprocessed training features
+│   ├── X_test.pkl                  # Preprocessed test features
+│   ├── y_train.pkl                 # Training labels
+│   ├── y_test.pkl                  # Test labels
+│   ├── scaler.pkl                  # Fitted StandardScaler
+│   └── feature_names.pkl           # Feature names after encoding
+│
+├── models/                         # Trained models and results
+│   ├── logistic_regression.pkl
+│   ├── decision_tree.pkl
+│   ├── random_forest.pkl
+│   ├── xgboost.pkl
+│   └── model_comparison.csv        # Performance comparison table
+│
+├── mlruns/                         # MLFlow experiment tracking data
 │
 ├── notebooks/                      # Jupyter notebooks
-│   └── eda.ipynb                   # Exploratory Data Analysis
+│   ├── eda.ipynb                   # Exploratory Data Analysis
+│   └── preprocessing_and_modeling.ipynb  # Interactive modeling (optional)
 │
 ├── frontend/                       # Future: React-based web interface
 │
+├── requirements.txt                # Python dependencies
 └── README.md                       # Project documentation
 ```
 
 ---
 
-## 🚀 Week 1 Progress
+## 🚀 Week 1-2 Progress
 
-### ✅ Completed Tasks
+### ✅ Week 1: Completed Tasks
 
 1. **Project Initialization**
    - Created organized directory structure
@@ -73,13 +92,8 @@ Online Shopper Purchase Intention Prediction using an End-to-End ML Pipeline/
    - Loaded and inspected dataset (shape, columns, data types)
    - Analyzed missing values
    - Visualized class distribution (Revenue)
-   - Analyzed purchase patterns by:
-     - Visitor Type (New, Returning, Other)
-     - Month
-   - Explored distributions of key numerical features:
-     - PageValues
-     - BounceRates
-     - ExitRates
+   - Analyzed purchase patterns by Visitor Type and Month
+   - Explored distributions of key numerical features
    - Created correlation heatmap focusing on Revenue
    - **All plots saved to `data/plots/`**
 
@@ -96,45 +110,88 @@ Online Shopper Purchase Intention Prediction using an End-to-End ML Pipeline/
 
 ---
 
+### ✅ Week 2: Completed Tasks
+
+1. **Data Preprocessing Pipeline** (`code/preprocessing.py`)
+   - ✅ No missing values detected in dataset
+   - ✅ Categorical encoding:
+     - One-Hot Encoding for `Month` (9 columns) and `VisitorType` (2 columns)
+     - Binary encoding for `Weekend` and `Revenue`
+   - ✅ Feature scaling using `StandardScaler`
+   - ✅ Train-test split (80/20) with stratification
+   - ✅ SMOTE applied on training set only:
+     - Training samples increased from 9,864 to 16,676
+     - Perfect class balance achieved (8,338 each class)
+
+2. **Model Training with MLFlow** (`code/train_models.py`)
+   - ✅ MLFlow experiment tracking configured
+   - ✅ Trained 4 models with full metric logging:
+     - Logistic Regression (Baseline)
+     - Decision Tree (Baseline)
+     - Random Forest (Ensemble)
+     - XGBoost (Ensemble)
+   - ✅ All models saved to `models/` directory
+   - ✅ Confusion matrices generated for each model
+
+3. **Model Performance Comparison**
+
+| Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
+|-------|----------|-----------|--------|----------|---------|
+| **Logistic Regression** | 0.8528 | 0.5173 | 0.7435 | 0.6101 | 0.8978 |
+| **Decision Tree** | 0.8500 | 0.5112 | 0.7199 | 0.5978 | 0.8532 |
+| **Random Forest** | 0.8836 | 0.6058 | 0.7120 | 0.6546 | 0.9192 |
+| **XGBoost** | **0.8933** | **0.6537** | 0.6623 | **0.6580** | **0.9280** |
+
+4. **Best Model Selection: 🏆 XGBoost**
+   - **F1-Score**: 0.6580 (best balance of precision and recall)
+   - **ROC-AUC**: 0.9280 (excellent class separation)
+   - **Accuracy**: 89.33%
+   - **Precision**: 65.37% (fewer false positives)
+   - **Recall**: 66.23% (good detection of purchases)
+
+### 📊 MLFlow Experiment Tracking
+
+- **MLFlow UI**: Run `mlflow ui` and navigate to `http://localhost:5000`
+- **Tracking**: All experiments logged with parameters, metrics, and artifacts
+- **Artifacts**: Models, confusion matrices, and performance metrics stored
+- **Database**: `mlflow.db` contains complete experiment history
+
+---
+
 ## 🛠️ Planned Technologies
 
-### Week 1 (Current)
+### Week 1-2 (Completed)
 - **Python 3.x**
 - **Pandas** - Data manipulation
 - **NumPy** - Numerical computing
 - **Matplotlib & Seaborn** - Data visualization
 - **Jupyter Notebook** - Interactive analysis
-
-### Future Weeks
 - **Scikit-learn** - Machine learning algorithms and preprocessing
 - **Imbalanced-learn (imblearn)** - SMOTE for handling class imbalance
+- **XGBoost** - Gradient boosting
 - **MLflow** - Experiment tracking and model registry
+- **Joblib** - Model persistence
+
+### Future Weeks
 - **FastAPI** - REST API for model serving
 - **Docker** - Containerization for deployment
 - **React** - Frontend web interface
 
 ---
 
-## 📈 Next Steps (Week 2+)
+## 📈 Next Steps (Week 3+)
 
-1. **Data Preprocessing**
-   - Implement missing value imputation
-   - Encode categorical variables
-   - Scale numerical features
-   - Apply train-test split
-   - Apply SMOTE for class balancing
+1. **Model Optimization**
+   - Hyperparameter tuning using GridSearchCV or RandomizedSearchCV
+   - Feature engineering and selection
+   - Model ensembling techniques
+   - Cross-validation for robust evaluation
 
-2. **Model Development**
-   - Train baseline models (Logistic Regression, Decision Trees)
-   - Experiment with ensemble methods (Random Forest, XGBoost)
-   - Hyperparameter tuning
-   - Model evaluation with appropriate metrics for imbalanced data
-
-3. **MLOps & Deployment**
-   - Track experiments with MLflow
-   - Build FastAPI endpoints
-   - Create Docker containers
-   - Develop React frontend
+2. **MLOps & Deployment**
+   - Build FastAPI endpoints for model serving
+   - Create Docker containers for deployment
+   - Develop React frontend for user interaction
+   - CI/CD pipeline setup
 
 ---
 
@@ -153,4 +210,4 @@ Online Shopper Purchase Intention Prediction using an End-to-End ML Pipeline/
 
 ---
 
-**Last Updated**: Week 1 - February 2026
+**Last Updated**: Week 2 - February 2026
