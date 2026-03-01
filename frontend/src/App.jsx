@@ -51,7 +51,7 @@ export default function App() {
         {tab === 'predict' && (
           <>
             <h2 className="section-title">Purchase Prediction</h2>
-            <p className="section-sub">Fill in the session details and get an instant XGBoost prediction.</p>
+            <p className="section-sub">Fill in the session details and get an instant HistGradientBoosting prediction.</p>
             <div className="predict-layout">
               <PredictionForm onResult={r => { setResult(r); }} />
               <ResultCard result={result} />
@@ -65,7 +65,7 @@ export default function App() {
       {/* Footer */}
       <footer className="footer">
         ShopperAI — Python for Data Science · ML Pipeline Project ·
-        Powered by <strong>XGBoost</strong> + <strong>FastAPI</strong> + <strong>React</strong>
+        Powered by <strong>HistGradientBoosting</strong> + <strong>FastAPI</strong> + <strong>React</strong>
       </footer>
     </div>
   );

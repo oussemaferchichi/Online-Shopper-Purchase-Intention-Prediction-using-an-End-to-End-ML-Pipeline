@@ -17,7 +17,7 @@ export default function ResultCard({ result }) {
                 {result.label}
             </div>
             <div className="result-prob">
-                Model confidence from XGBoost (GridSearchCV tuned)
+                Model confidence from HistGradientBoosting (GridSearchCV tuned)
             </div>
 
             <div className="prob-bar-wrap">

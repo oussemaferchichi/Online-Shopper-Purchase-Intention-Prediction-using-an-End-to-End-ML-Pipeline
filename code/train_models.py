@@ -1,304 +1,245 @@
 """
+code/train_models.py
+--------------------
 Model Training Pipeline with MLFlow Experiment Tracking
 
-This module trains multiple models and tracks experiments using MLFlow:
-- Baseline models: Logistic Regression, Decision Tree
-- Ensemble models: Random Forest, XGBoost
-- Metrics: Accuracy, Precision, Recall, F1, ROC-AUC
-- MLFlow tracking for model comparison
+Trains 4 models, logs to MLflow with comparison tags.
+Best model is marked with is_best=true and saved for the API.
+
+Run:
+    python -m code.train_models
+Then view:
+    mlflow ui  →  http://localhost:5000
 """
 
+import os, time
 import pandas as pd
 import numpy as np
 import joblib
-import os
-import time
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from xgboost import XGBClassifier
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score, 
-    roc_auc_score, confusion_matrix, classification_report
-)
 import mlflow
 import mlflow.sklearn
+from mlflow import MlflowClient
+
+from sklearn.linear_model  import LogisticRegression
+from sklearn.tree           import DecisionTreeClassifier
+from sklearn.ensemble       import (
+    RandomForestClassifier,
+    HistGradientBoostingClassifier,
+)
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score, confusion_matrix,
+    ConfusionMatrixDisplay,
+)
+
+DATA_DIR   = "data"
+MODELS_DIR = "models"
+PLOTS_DIR  = "data/plots"
+EXPERIMENT = "Online Shopper – All Models Comparison"
+
+os.makedirs(MODELS_DIR, exist_ok=True)
+os.makedirs(PLOTS_DIR,  exist_ok=True)
 
 
-def load_preprocessed_data(data_dir='data'):
-    """Load preprocessed data from pickle files."""
+# ── Data loader ───────────────────────────────────────────────────────────────
+def load_preprocessed_data(data_dir=DATA_DIR):
     print("Loading preprocessed data...")
-    
-    X_train = joblib.load(os.path.join(data_dir, 'X_train.pkl'))
-    X_test = joblib.load(os.path.join(data_dir, 'X_test.pkl'))
-    y_train = joblib.load(os.path.join(data_dir, 'y_train.pkl'))
-    y_test = joblib.load(os.path.join(data_dir, 'y_test.pkl'))
-    feature_names = joblib.load(os.path.join(data_dir, 'feature_names.pkl'))
-    
-    print(f"Training set: {X_train.shape}")
-    print(f"Test set: {X_test.shape}")
-    
+    X_train = joblib.load(os.path.join(data_dir, "X_train.pkl"))
+    X_test  = joblib.load(os.path.join(data_dir, "X_test.pkl"))
+    y_train = joblib.load(os.path.join(data_dir, "y_train.pkl"))
+    y_test  = joblib.load(os.path.join(data_dir, "y_test.pkl"))
+    feature_names = joblib.load(os.path.join(data_dir, "feature_names.pkl"))
+    print(f"Train: {X_train.shape}  |  Test: {X_test.shape}")
     return X_train, X_test, y_train, y_test, feature_names
 
 
+# ── Evaluation ────────────────────────────────────────────────────────────────
 def evaluate_model(model, X_test, y_test, model_name):
-    """
-    Evaluate model performance and return metrics.
-    """
     print(f"\n=== Evaluating {model_name} ===")
-    
-    # Make predictions
-    y_pred = model.predict(X_test)
-    y_pred_proba = model.predict_proba(X_test)[:, 1]
-    
-    # Calculate metrics
-    accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
-    roc_auc = roc_auc_score(y_test, y_pred_proba)
-    
-    # Confusion matrix
-    cm = confusion_matrix(y_test, y_pred)
-    
-    # Print results
-    print(f"Accuracy:  {accuracy:.4f}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall:    {recall:.4f}")
-    print(f"F1-Score:  {f1:.4f}")
-    print(f"ROC-AUC:   {roc_auc:.4f}")
-    print(f"\nConfusion Matrix:\n{cm}")
-    
+    y_pred  = model.predict(X_test)
+    y_proba = model.predict_proba(X_test)[:, 1]
     metrics = {
-        'accuracy': accuracy,
-        'precision': precision,
-        'recall': recall,
-        'f1_score': f1,
-        'roc_auc': roc_auc
+        "accuracy":  round(accuracy_score(y_test, y_pred),                  4),
+        "precision": round(precision_score(y_test, y_pred, zero_division=0),4),
+        "recall":    round(recall_score(y_test, y_pred),                     4),
+        "f1_score":  round(f1_score(y_test, y_pred),                         4),
+        "roc_auc":   round(roc_auc_score(y_test, y_proba),                   4),
     }
-    
+    cm = confusion_matrix(y_test, y_pred)
+    for k, v in metrics.items():
+        print(f"  {k:10s}: {v:.4f}")
     return metrics, cm
 
 
-def plot_confusion_matrix(cm, model_name, output_dir='data/plots'):
-    """Plot and save confusion matrix."""
+# ── Confusion matrix ──────────────────────────────────────────────────────────
+def plot_confusion_matrix(cm, model_name, output_dir=PLOTS_DIR):
     os.makedirs(output_dir, exist_ok=True)
-    
-    plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', cbar=True,
-                xticklabels=['No Purchase', 'Purchase'],
-                yticklabels=['No Purchase', 'Purchase'])
-    plt.title(f'Confusion Matrix - {model_name}')
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
-    
-    filepath = os.path.join(output_dir, f'confusion_matrix_{model_name.replace(" ", "_").lower()}.png')
-    plt.savefig(filepath, dpi=100, bbox_inches='tight')
+    fig, ax = plt.subplots(figsize=(6, 5))
+    disp = ConfusionMatrixDisplay(cm, display_labels=["No Purchase", "Purchase"])
+    disp.plot(ax=ax, colorbar=True, cmap="Blues")
+    ax.set_title(f"Confusion Matrix — {model_name}")
+    path = os.path.join(output_dir, f"cm_{model_name.lower().replace(' ', '_')}.png")
+    plt.tight_layout()
+    plt.savefig(path, dpi=100)
     plt.close()
-    
-    return filepath
+    return path
 
 
-def train_and_log_model(model, model_name, X_train, X_test, y_train, y_test, params, experiment_name):
-    """
-    Train a model and log everything to MLFlow.
-    """
-    print(f"\n{'='*60}")
-    print(f"Training {model_name}")
-    print(f"{'='*60}")
-    
-    # Set MLFlow experiment
+# ── Train + log one model ─────────────────────────────────────────────────────
+def train_and_log_model(model, model_name, X_train, X_test, y_train, y_test,
+                        params, experiment_name, category="Baseline"):
+    print(f"\n{'='*60}\nTraining {model_name}\n{'='*60}")
     mlflow.set_experiment(experiment_name)
-    
-    with mlflow.start_run(run_name=model_name):
-        # Record start time
-        start_time = time.time()
-        
-        # Train model
-        print(f"Training {model_name}...")
+
+    with mlflow.start_run(run_name=model_name) as run:
+        t0 = time.time()
         model.fit(X_train, y_train)
-        training_time = time.time() - start_time
-        
-        # Evaluate model
+        elapsed = round(time.time() - t0, 2)
+
         metrics, cm = evaluate_model(model, X_test, y_test, model_name)
-        
-        # Plot confusion matrix
         cm_path = plot_confusion_matrix(cm, model_name)
-        
-        # Log parameters
-        mlflow.log_params(params)
-        mlflow.log_param("training_samples", len(y_train))
-        mlflow.log_param("test_samples", len(y_test))
-        
-        # Log metrics
-        mlflow.log_metrics(metrics)
-        mlflow.log_metric("training_time_seconds", training_time)
-        
-        # Log confusion matrix as artifact
-        mlflow.log_artifact(cm_path)
-        
-        # Log model
-        mlflow.sklearn.log_model(model, "model")
-        
-        print(f"\n✅ {model_name} training completed in {training_time:.2f}s")
-        print(f"MLFlow run logged successfully")
-        
-    return model, metrics
 
+        # —— Tags visible in MLflow UI ——
+        mlflow.set_tag("model_category", category)
+        mlflow.set_tag("model_name",     model_name)
+        mlflow.set_tag("uses_smote",     "true")
+        mlflow.set_tag("is_best",        "false")   # updated after all models train
 
-def train_all_models(X_train, X_test, y_train, y_test, experiment_name="Online Shopper Purchase Intention"):
-    """
-    Train all models (baseline + ensemble) and track with MLFlow.
-    """
-    models_results = {}
-    
-    # 1. Logistic Regression
-    print("\n" + "="*60)
-    print("1. LOGISTIC REGRESSION")
-    print("="*60)
-    lr_params = {
-        'model_type': 'Logistic Regression',
-        'max_iter': 1000,
-        'random_state': 42,
-        'solver': 'lbfgs'
-    }
-    lr_model = LogisticRegression(max_iter=1000, random_state=42)
-    lr_model, lr_metrics = train_and_log_model(
-        lr_model, "Logistic Regression", X_train, X_test, y_train, y_test, lr_params, experiment_name
-    )
-    models_results['Logistic Regression'] = {'model': lr_model, 'metrics': lr_metrics}
-    
-    # 2. Decision Tree
-    print("\n" + "="*60)
-    print("2. DECISION TREE")
-    print("="*60)
-    dt_params = {
-        'model_type': 'Decision Tree',
-        'max_depth': 10,
-        'min_samples_split': 10,
-        'random_state': 42
-    }
-    dt_model = DecisionTreeClassifier(max_depth=10, min_samples_split=10, random_state=42)
-    dt_model, dt_metrics = train_and_log_model(
-        dt_model, "Decision Tree", X_train, X_test, y_train, y_test, dt_params, experiment_name
-    )
-    models_results['Decision Tree'] = {'model': dt_model, 'metrics': dt_metrics}
-    
-    # 3. Random Forest
-    print("\n" + "="*60)
-    print("3. RANDOM FOREST")
-    print("="*60)
-    rf_params = {
-        'model_type': 'Random Forest',
-        'n_estimators': 100,
-        'max_depth': 15,
-        'min_samples_split': 5,
-        'random_state': 42
-    }
-    rf_model = RandomForestClassifier(n_estimators=100, max_depth=15, min_samples_split=5, random_state=42)
-    rf_model, rf_metrics = train_and_log_model(
-        rf_model, "Random Forest", X_train, X_test, y_train, y_test, rf_params, experiment_name
-    )
-    models_results['Random Forest'] = {'model': rf_model, 'metrics': rf_metrics}
-    
-    # 4. XGBoost
-    print("\n" + "="*60)
-    print("4. XGBOOST")
-    print("="*60)
-    xgb_params = {
-        'model_type': 'XGBoost',
-        'n_estimators': 100,
-        'max_depth': 6,
-        'learning_rate': 0.1,
-        'random_state': 42
-    }
-    xgb_model = XGBClassifier(n_estimators=100, max_depth=6, learning_rate=0.1, random_state=42, eval_metric='logloss')
-    xgb_model, xgb_metrics = train_and_log_model(
-        xgb_model, "XGBoost", X_train, X_test, y_train, y_test, xgb_params, experiment_name
-    )
-    models_results['XGBoost'] = {'model': xgb_model, 'metrics': xgb_metrics}
-    
-    return models_results
-
-
-def save_models(models_results, output_dir='models'):
-    """Save all trained models to disk."""
-    print(f"\n{'='*60}")
-    print("Saving Models")
-    print(f"{'='*60}")
-    
-    os.makedirs(output_dir, exist_ok=True)
-    
-    for model_name, data in models_results.items():
-        model = data['model']
-        filename = f"{model_name.replace(' ', '_').lower()}.pkl"
-        filepath = os.path.join(output_dir, filename)
-        joblib.dump(model, filepath)
-        print(f"✅ Saved {model_name} to {filepath}")
-
-
-def print_comparison_table(models_results):
-    """Print comparison table of all models."""
-    print(f"\n{'='*60}")
-    print("MODEL COMPARISON TABLE")
-    print(f"{'='*60}\n")
-    
-    # Create DataFrame for comparison
-    comparison_data = []
-    for model_name, data in models_results.items():
-        metrics = data['metrics']
-        comparison_data.append({
-            'Model': model_name,
-            'Accuracy': f"{metrics['accuracy']:.4f}",
-            'Precision': f"{metrics['precision']:.4f}",
-            'Recall': f"{metrics['recall']:.4f}",
-            'F1-Score': f"{metrics['f1_score']:.4f}",
-            'ROC-AUC': f"{metrics['roc_auc']:.4f}"
+        # —— Parameters & metrics ——
+        mlflow.log_params({
+            **params,
+            "training_time_s": elapsed,
+            "train_samples":   len(y_train),
+            "test_samples":    len(y_test),
         })
-    
-    df_comparison = pd.DataFrame(comparison_data)
-    print(df_comparison.to_string(index=False))
-    
-    # Find best model based on F1-Score
-    best_f1_idx = df_comparison['F1-Score'].astype(float).idxmax()
-    best_model_name = df_comparison.loc[best_f1_idx, 'Model']
-    
-    print(f"\n{'='*60}")
-    print(f"🏆 Best Model (based on F1-Score): {best_model_name}")
-    print(f"{'='*60}")
-    
-    return df_comparison, best_model_name
+        mlflow.log_metrics(metrics)
+        mlflow.log_metric("training_time_seconds", elapsed)
+        mlflow.log_artifact(cm_path)
+
+        # —— Register model ——
+        reg_name = f"shopper_{model_name.lower().replace(' ', '_')}"
+        mlflow.sklearn.log_model(model, artifact_path="model",
+                                 registered_model_name=reg_name)
+
+        print(f"✅ {model_name} done in {elapsed}s")
+
+    return run.info.run_id, model, metrics
 
 
+# ── Train all models ──────────────────────────────────────────────────────────
+def train_all_models(X_train, X_test, y_train, y_test,
+                     experiment_name=EXPERIMENT):
+    client = MlflowClient()
+    all_results = []
+
+    configs = [
+        (
+            "Logistic Regression",
+            LogisticRegression(max_iter=1000, random_state=42),
+            {"max_iter": 1000, "solver": "lbfgs"},
+            "Baseline",
+        ),
+        (
+            "Decision Tree",
+            DecisionTreeClassifier(max_depth=10, min_samples_split=10, random_state=42),
+            {"max_depth": 10, "min_samples_split": 10},
+            "Baseline",
+        ),
+        (
+            "Random Forest",
+            RandomForestClassifier(n_estimators=100, max_depth=15,
+                                   random_state=42, n_jobs=1),
+            {"n_estimators": 100, "max_depth": 15},
+            "Ensemble",
+        ),
+        (
+            "HistGradientBoosting",
+            HistGradientBoostingClassifier(max_iter=200, max_depth=6,
+                                           learning_rate=0.1, random_state=42),
+            {"max_iter": 200, "max_depth": 6, "learning_rate": 0.1},
+            "Ensemble",
+        ),
+    ]
+
+    for name, model, params, category in configs:
+        run_id, trained, metrics = train_and_log_model(
+            model, name, X_train, X_test, y_train, y_test,
+            params, experiment_name, category,
+        )
+        all_results.append({
+            "name": name, "run_id": run_id,
+            "model": trained, "metrics": metrics,
+        })
+        joblib.dump(trained,
+                    os.path.join(MODELS_DIR,
+                                 f"{name.lower().replace(' ', '_')}.pkl"))
+
+    # Mark best run
+    best = max(all_results, key=lambda r: r["metrics"]["f1_score"])
+    client.set_tag(best["run_id"], "is_best",        "true")
+    client.set_tag(best["run_id"], "model_category", "Ensemble ⭐ BEST")
+    print(f"\n🏆 Best: {best['name']}  (F1={best['metrics']['f1_score']:.4f})")
+
+    return (
+        {r["name"]: {"model": r["model"], "metrics": r["metrics"]}
+         for r in all_results},
+        best,
+    )
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+def save_models(results, output_dir=MODELS_DIR):
+    os.makedirs(output_dir, exist_ok=True)
+    for name, data in results.items():
+        path = os.path.join(output_dir,
+                            f"{name.lower().replace(' ', '_')}.pkl")
+        joblib.dump(data["model"], path)
+        print(f"✅ Saved {name} → {path}")
+
+
+def print_comparison_table(results):
+    rows = [
+        {"Model": n, **{k: f"{v:.4f}" for k, v in d["metrics"].items()}}
+        for n, d in results.items()
+    ]
+    df = pd.DataFrame(rows)
+    print(f"\n{'='*60}\nMODEL COMPARISON\n{'='*60}")
+    print(df.to_string(index=False))
+    best = df.loc[df["f1_score"].astype(float).idxmax(), "Model"]
+    print(f"\n🏆 Best model (F1): {best}")
+    return df, best
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Load preprocessed data
     X_train, X_test, y_train, y_test, feature_names = load_preprocessed_data()
-    
-    # Train all models with MLFlow tracking
-    print("\n" + "="*60)
+
+    print("\n" + "=" * 60)
     print("STARTING MODEL TRAINING WITH MLFLOW")
-    print("="*60)
-    print(f"\nMLFlow Tracking URI: {mlflow.get_tracking_uri()}")
-    print("To view experiments, run: mlflow ui")
-    
-    models_results = train_all_models(X_train, X_test, y_train, y_test)
-    
-    # Save models
-    save_models(models_results)
-    
-    # Print comparison
-    comparison_df, best_model = print_comparison_table(models_results)
-    
-    # Save comparison table
-    comparison_df.to_csv('models/model_comparison.csv', index=False)
-    print(f"\n✅ Model comparison saved to models/model_comparison.csv")
-    
-    print("\n" + "="*60)
+    print(f"Experiment: {EXPERIMENT}")
+    print("=" * 60)
+
+    results, best_result = train_all_models(X_train, X_test, y_train, y_test)
+
+    # Save comparison CSV
+    df, best_name = print_comparison_table(results)
+    df.to_csv(os.path.join(MODELS_DIR, "model_comparison.csv"), index=False)
+    print(f"\n✅ Comparison table → models/model_comparison.csv")
+
+    # Save best model for the API
+    joblib.dump(best_result["model"], os.path.join(DATA_DIR, "best_model.pkl"))
+    print(f"✅ Best model ({best_result['name']}) → data/best_model.pkl")
+
+    print(f"\n{'='*60}")
     print("✅ ALL MODELS TRAINED SUCCESSFULLY!")
-    print("="*60)
-    print("\nNext steps:")
-    print("1. Run 'mlflow ui' to view experiment results")
-    print("2. Navigate to http://localhost:5000 in your browser")
-    print("3. Compare models and review metrics")
+    print(f"{'='*60}")
+    print("\nView in MLflow UI:")
+    print("  mlflow ui  →  http://localhost:5000")
+    print("\nIn the MLflow UI you can:")
+    print("  • See all 4 runs in one experiment")
+    print("  • Compare Accuracy / F1 / ROC-AUC side-by-side")
+    print("  • Filter by tag  'is_best = true'  to find the best model")
+    print("  • View confusion matrix PNG artifacts per model")
+    print("  • Check registered models in the 'Models' tab")
