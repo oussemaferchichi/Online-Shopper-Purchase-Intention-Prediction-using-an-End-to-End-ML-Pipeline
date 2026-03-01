@@ -1,0 +1,28 @@
+.git/
+.gitignore
+__pycache__/
+*.pyc
+venv/
+env/
+.env
+.ipynb_checkpoints/
+mlruns/
+mlflow.db
+notebooks/
+frontend/node_modules/
+frontend/dist/
+BEGINNER_GUIDE.md
+api/
+
+
+# Raw data (not needed at runtime)
+data/online_shoppers_intention.csv
+
+# Notebooks (not needed at runtime)
+notebooks/
+
+# Frontend (not needed for API image)
+frontend/
+
+# Beginner guides
+BEGINNER_GUIDE.md

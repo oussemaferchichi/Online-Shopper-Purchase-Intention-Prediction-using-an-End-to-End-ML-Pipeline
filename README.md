@@ -1,208 +1,163 @@
-# Online Shoppers Purchasing Intention Prediction using an End-to-End Machine Learning Pipeline
+# 🛒 Online Shopper Purchase Intention Prediction
+### End-to-End Machine Learning Pipeline
 
-## 📋 Project Overview
+[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-2.0-green?logo=fastapi)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-18-61dafb?logo=react)](https://react.dev)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docker.com)
+[![MLflow](https://img.shields.io/badge/MLflow-Tracked-orange?logo=mlflow)](https://mlflow.org)
+[![Docker Hub](https://img.shields.io/badge/DockerHub-oussemagd-blue?logo=docker)](https://hub.docker.com/r/oussemagd/online-shopper-api)
 
-This project aims to predict whether an online shopping session will result in a purchase using machine learning techniques. By analyzing user behavior data from online shopping sessions, we build a predictive model that helps e-commerce businesses understand and anticipate customer purchasing decisions.
-
-> **Course**: Python for Data Science – Guided Machine Learning  
-> **Week**: 1 - Exploratory Data Analysis & Project Setup  
-> **Status**: ✅ Initial EDA Complete
-
----
-
-## 🎯 Objectives
-
-1. **Predict purchase intent**: Build a binary classification model to predict whether a shopping session will end in a purchase (Revenue = TRUE/FALSE)
-2. **Analyze customer behavior**: Understand patterns and features that indicate higher purchase likelihood
-3. **Handle class imbalance**: Address the significant imbalance in the dataset (~15% purchase rate) using appropriate techniques
-4. **Deploy an end-to-end pipeline**: Create a complete ML workflow from data preprocessing to model deployment
+> **Course:** Python for Data Science – Guided Machine Learning  
+> **Dataset:** [UCI Online Shoppers Purchasing Intention](https://archive.ics.uci.edu/ml/datasets/Online+Shoppers+Purchasing+Intention+Dataset) — 12,330 sessions, 18 features  
+> **Best Model:** XGBoost (Accuracy 89.3% · F1 0.658 · ROC-AUC 0.928)
 
 ---
 
-## 📊 Dataset Description
+## 🚀 Quick Start (Full Stack with Docker)
 
-- **Source**: [UCI Machine Learning Repository - Online Shoppers Purchasing Intention Dataset](https://archive.ics.uci.edu/ml/datasets/Online+Shoppers+Purchasing+Intention+Dataset)
-- **Format**: CSV
-- **Target Variable**: `Revenue` (TRUE = purchase, FALSE = no purchase)
-- **Key Features**:
-  - **Administrative, Informational, Product-related pages**: Number of pages visited
-  - **Duration metrics**: Time spent on different page types
-  - **Bounce Rates & Exit Rates**: User engagement metrics
-  - **Page Values**: Average value of pages visited
-  - **Special Day**: Closeness to special occasions
-  - **Month**: Month of the year
-  - **Operating System, Browser, Region, Traffic Type**: Technical and geographic features
-  - **Visitor Type**: New, Returning, or Other
-  - **Weekend**: Whether the session occurred on a weekend
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- That's it!
 
-### ⚠️ Class Imbalance
-The dataset exhibits significant class imbalance with approximately **15% purchase rate** and **85% non-purchase rate**. This imbalance is a critical challenge that will be addressed using **SMOTE (Synthetic Minority Over-sampling Technique)** during model training.
+### Run the Complete Stack
+```bash
+# 1. Clone the repository
+git clone https://github.com/oussemaferchichi/Online-Shopper-Purchase-Intention-Prediction-using-an-End-to-End-ML-Pipeline.git
+cd "Online Shopper Purchase Intention Prediction using an End-to-End ML Pipeline"
+
+# 2. Start everything (API + Frontend)
+docker compose up --build
+
+# 3. Open in browser:
+#    Frontend (React Dashboard) → http://localhost:3000
+#    API Swagger UI             → http://localhost:8000/docs
+```
+
+### Stop the Stack
+```bash
+docker compose down
+```
 
 ---
 
 ## 📁 Project Structure
 
 ```
-Online Shopper Purchase Intention Prediction using an End-to-End ML Pipeline/
+📦 Online Shopper Purchase Intention Prediction
 │
-├── code/                           # Source code for preprocessing and modeling
-│   ├── preprocessing.py            # Data preprocessing pipeline
-│   └── train_models.py             # Model training with MLFlow tracking
+├── 📂 code/                        # Python scripts
+│   ├── preprocessing.py            # Data cleaning, encoding, SMOTE
+│   ├── train_models.py             # Baseline model training + MLflow
+│   ├── modeling.py                 # GridSearchCV hyperparameter tuning
+│   └── app.py                      # FastAPI application (Week 4)
 │
-├── data/                           # Dataset and visualizations
+├── 📂 frontend/                    # React + Vite app (Week 5)
+│   ├── src/
+│   │   ├── App.jsx                 # Main app with navigation
+│   │   ├── Dashboard.jsx           # Metrics + charts dashboard
+│   │   ├── PredictionForm.jsx      # 17-field prediction form
+│   │   ├── ResultCard.jsx          # Animated result display
+│   │   ├── BatchTab.jsx            # Batch prediction interface
+│   │   ├── api.js                  # API base URL config
+│   │   └── index.css               # Premium dark design system
+│   ├── package.json
+│   └── vite.config.js
+│
+├── 📂 data/                        # Serialized data & models
 │   ├── online_shoppers_intention.csv
-│   ├── plots/                      # EDA and model visualizations
-│   ├── X_train.pkl                 # Preprocessed training features
-│   ├── X_test.pkl                  # Preprocessed test features
-│   ├── y_train.pkl                 # Training labels
-│   ├── y_test.pkl                  # Test labels
-│   ├── scaler.pkl                  # Fitted StandardScaler
-│   └── feature_names.pkl           # Feature names after encoding
+│   ├── X_train.pkl, X_test.pkl
+│   ├── y_train.pkl, y_test.pkl
+│   ├── scaler.pkl, feature_names.pkl
+│   ├── best_model.pkl              # Best GridSearchCV model
+│   └── plots/                      # Confusion matrices
 │
-├── models/                         # Trained models and results
-│   ├── logistic_regression.pkl
-│   ├── decision_tree.pkl
-│   ├── random_forest.pkl
+├── 📂 models/                      # Trained model files
 │   ├── xgboost.pkl
-│   └── model_comparison.csv        # Performance comparison table
+│   ├── random_forest.pkl
+│   ├── xgboost_tuned.pkl           # GridSearchCV tuned
+│   ├── random_forest_tuned.pkl
+│   └── model_comparison.csv
 │
-├── mlruns/                         # MLFlow experiment tracking data
+├── 📂 notebooks/                   # Jupyter notebooks
+│   └── eda.ipynb                   # Exploratory Data Analysis
 │
-├── notebooks/                      # Jupyter notebooks
-│   ├── eda.ipynb                   # Exploratory Data Analysis
-│   └── preprocessing_and_modeling.ipynb  # Interactive modeling (optional)
+├── 📂 mlruns/                      # MLflow experiment logs
 │
-├── frontend/                       # Future: React-based web interface
-│
-├── requirements.txt                # Python dependencies
-└── README.md                       # Project documentation
+├── Dockerfile.api                  # Backend container
+├── Dockerfile.frontend             # Frontend container (multi-stage)
+├── docker-compose.yml              # Full stack orchestration
+└── requirements.txt
 ```
 
 ---
 
-## 🚀 Week 1-2 Progress
+## 📊 Weekly Progress
 
-### ✅ Week 1: Completed Tasks
+### ✅ Week 1 — Setup & EDA
+- Environment configuration and project structure
+- Exploratory Data Analysis (`notebooks/eda.ipynb`)
+  - Class distribution: **85% No Purchase / 15% Purchase**
+  - Feature correlations and seasonal patterns
+  - Identified class imbalance problem → solved with SMOTE in Week 2
 
-1. **Project Initialization**
-   - Created organized directory structure
-   - Set up data and visualization folders
+### ✅ Week 2 — Preprocessing & Imbalance (`code/preprocessing.py`)
+- One-Hot Encoding for `Month` and `VisitorType` → 26 features
+- StandardScaler for numerical features
+- Stratified train/test split (80/20)
+- **SMOTE** applied to training set only → 9,864 → 16,676 balanced samples
 
-2. **Exploratory Data Analysis** (`notebooks/eda.ipynb`)
-   - Loaded and inspected dataset (shape, columns, data types)
-   - Analyzed missing values
-   - Visualized class distribution (Revenue)
-   - Analyzed purchase patterns by Visitor Type and Month
-   - Explored distributions of key numerical features
-   - Created correlation heatmap focusing on Revenue
-   - **All plots saved to `data/plots/`**
+### ✅ Week 3 — Advanced Modeling & MLflow (`code/train_models.py` + `code/modeling.py`)
 
-3. **Preprocessing Plan Documentation**
-   - Documented comprehensive preprocessing strategy
-   - Defined pipeline approach using scikit-learn
+#### Baseline Models
+| Model               | Accuracy | F1-Score | ROC-AUC |
+|---------------------|----------|----------|---------|
+| Logistic Regression | 85.28%   | 0.610    | 0.898   |
+| Decision Tree       | 85.00%   | 0.598    | 0.853   |
 
-### 📝 Key Findings from EDA
+#### Ensemble Models (base)
+| Model         | Accuracy | F1-Score | ROC-AUC |
+|---------------|----------|----------|---------|
+| Random Forest | 88.36%   | 0.655    | 0.919   |
+| **XGBoost**   | **89.33%** | **0.658** | **0.928** |
 
-- **Class Imbalance Confirmed**: ~15% purchase rate requires SMOTE
-- **Visitor Type Impact**: Different purchase behaviors across visitor segments
-- **Seasonal Patterns**: Purchase rates vary by month
-- **Feature Correlations**: PageValues shows strong correlation with Revenue
+#### GridSearchCV Tuned (Week 2 spec)
+```bash
+python -m code.modeling
+```
+- GridSearchCV with 3-fold cross-validation, scoring=`f1`
+- Best tuned model saved to `data/best_model.pkl`
+- All runs tracked in MLflow
 
----
+**MLflow UI:**
+```bash
+mlflow ui
+# → http://localhost:5000
+```
 
-### ✅ Week 2: Completed Tasks
-
-1. **Data Preprocessing Pipeline** (`code/preprocessing.py`)
-   - ✅ No missing values detected in dataset
-   - ✅ Categorical encoding:
-     - One-Hot Encoding for `Month` (9 columns) and `VisitorType` (2 columns)
-     - Binary encoding for `Weekend` and `Revenue`
-   - ✅ Feature scaling using `StandardScaler`
-   - ✅ Train-test split (80/20) with stratification
-   - ✅ SMOTE applied on training set only:
-     - Training samples increased from 9,864 to 16,676
-     - Perfect class balance achieved (8,338 each class)
-
-2. **Model Training with MLFlow** (`code/train_models.py`)
-   - ✅ MLFlow experiment tracking configured
-   - ✅ Trained 4 models with full metric logging:
-     - Logistic Regression (Baseline)
-     - Decision Tree (Baseline)
-     - Random Forest (Ensemble)
-     - XGBoost (Ensemble)
-   - ✅ All models saved to `models/` directory
-   - ✅ Confusion matrices generated for each model
-
-3. **Model Performance Comparison**
-
-| Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
-|-------|----------|-----------|--------|----------|---------|
-| **Logistic Regression** | 0.8528 | 0.5173 | 0.7435 | 0.6101 | 0.8978 |
-| **Decision Tree** | 0.8500 | 0.5112 | 0.7199 | 0.5978 | 0.8532 |
-| **Random Forest** | 0.8836 | 0.6058 | 0.7120 | 0.6546 | 0.9192 |
-| **XGBoost** | **0.8933** | **0.6537** | 0.6623 | **0.6580** | **0.9280** |
-
-4. **Best Model Selection: 🏆 XGBoost**
-   - **F1-Score**: 0.6580 (best balance of precision and recall)
-   - **ROC-AUC**: 0.9280 (excellent class separation)
-   - **Accuracy**: 89.33%
-   - **Precision**: 65.37% (fewer false positives)
-   - **Recall**: 66.23% (good detection of purchases)
-
-### 📊 MLFlow Experiment Tracking
-
-- **MLFlow UI**: Run `mlflow ui` and navigate to `http://localhost:5000`
-- **Tracking**: All experiments logged with parameters, metrics, and artifacts
-- **Artifacts**: Models, confusion matrices, and performance metrics stored
-- **Database**: `mlflow.db` contains complete experiment history
-
----
-
-### ✅ Week 3: Completed Tasks
-
-1. **FastAPI Environment Setup** (`api/`)
-   - ✅ Created `api/` package with proper module structure
-   - ✅ Pydantic v2 schemas for strict input validation
-   - ✅ Model loader with preprocessing pipeline mirroring training
-   - ✅ Added dependencies: `fastapi`, `uvicorn`, `pydantic`
-
-2. **Endpoints Implemented** (`api/main.py`)
+### ✅ Week 4 — FastAPI Backend (`code/app.py`)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/` | Health check – confirms API is alive |
-| `GET` | `/model-info` | Model name, description & Week 2 metrics |
+| `GET`  | `/` | Health check (`status: ok, model_loaded: true`) |
+| `GET`  | `/model-info` | Model name, metrics, training details |
 | `POST` | `/predict` | Single session → purchase prediction |
-| `POST` | `/predict-batch` | Multiple sessions → list of predictions |
+| `POST` | `/predict-batch` | List of sessions → all predictions |
 
-3. **Swagger UI Testing** (`http://localhost:8000/docs`)
-   - ✅ All 4 endpoints tested and confirmed working
-   - ✅ Interactive Swagger UI auto-generated by FastAPI
-
-### 🔌 How to Run the API
-
+**Run locally:**
 ```bash
-# From project root
-uvicorn api.main:app --reload
+uvicorn code.app:app --reload --port 8000
+# → http://localhost:8000/docs  (Swagger UI)
 ```
 
-Then open:
-- **Swagger UI** → `http://localhost:8000/docs` (interactive testing)
-- **ReDoc** → `http://localhost:8000/redoc` (clean docs)
-
-### 📡 Example API Usage
-
-**POST `/predict`** – Single session:
+**Example prediction:**
 ```json
-// Request body
+// POST /predict
 {
-  "Administrative": 0, "Administrative_Duration": 0.0,
-  "Informational": 0, "Informational_Duration": 0.0,
-  "ProductRelated": 35, "ProductRelated_Duration": 2500.0,
+  "ProductRelated": 35, "ProductRelated_Duration": 2500,
   "BounceRates": 0.01, "ExitRates": 0.03, "PageValues": 25.4,
-  "SpecialDay": 0.0, "Month": "Nov", "OperatingSystems": 2,
-  "Browser": 2, "Region": 1, "TrafficType": 2,
-  "VisitorType": "Returning_Visitor", "Weekend": false
+  "Month": "Nov", "VisitorType": "Returning_Visitor", "Weekend": false,
+  ... (other fields)
 }
 
 // Response
@@ -214,53 +169,136 @@ Then open:
 }
 ```
 
----
+### ✅ Week 5 — React Frontend (`frontend/`)
 
-### Week 1-2 (Completed)
-- **Python 3.x**, **Pandas**, **NumPy** - Data processing
-- **Matplotlib & Seaborn** - Visualization
-- **Scikit-learn** - ML algorithms and preprocessing
-- **Imbalanced-learn** - SMOTE for class balancing
-- **XGBoost** - Best performing model
-- **MLflow** - Experiment tracking
-- **Joblib** - Model persistence
+Premium dark dashboard built with **React 18 + Vite**:
+- **📊 Dashboard tab** — Metric cards + Recharts bar & radar charts
+- **🔮 Predict tab** — 17-field form grouped by category + animated result
+- **⚡ Batch tab** — JSON textarea for batch scoring
 
-### Week 3 (Completed)
-- **FastAPI** - REST API framework
-- **Uvicorn** - ASGI server
-- **Pydantic v2** - Input validation
+**Run locally (dev mode):**
+```bash
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173
+```
 
-### Future Weeks
-- **Docker** - Containerization
-- **React** - Frontend web interface
+### ✅ Week 6 — Docker Containerization (`Dockerfile.*` + `docker-compose.yml`)
 
----
+Two containers orchestrated via docker-compose:
 
-## 📈 Next Steps (Week 4+)
-
-1. **Docker Containerization**
-   - Dockerfile for the FastAPI app
-   - `docker-compose.yml` for full stack deployment
-
-2. **React Frontend**
-   - Web form for submitting shopper sessions
-   - Prediction results dashboard
+| Service   | Container           | Port | Built from         |
+|-----------|---------------------|------|--------------------|
+| `api`     | `shopper-api`       | 8000 | `Dockerfile.api`   |
+| `frontend`| `shopper-frontend`  | 3000 | `Dockerfile.frontend` |
 
 ---
 
-## 👨‍💻 Author
+## 🐳 Docker Guide (Complete)
 
-**Course**: Python for Data Science – Guided Machine Learning  
-**Institution**: University Course Project  
-**Academic Year**: 2025-2026
+### Understanding Docker for this project
+
+```
+You (browser)
+    │
+    ├─→ http://localhost:3000  →  [shopper-frontend container]  (nginx serving React)
+    │                                         │
+    └─→ http://localhost:8000  →  [shopper-api container]       (uvicorn + FastAPI + XGBoost)
+```
+
+### Commands Reference
+
+```bash
+# ── Start ───────────────────────────────────────────────────────
+docker compose up              # Start (use cached images)
+docker compose up --build      # Start + rebuild images first
+docker compose up -d           # Start in background (detached)
+
+# ── Stop ────────────────────────────────────────────────────────
+docker compose down            # Stop and remove containers
+docker compose down -v         # Stop + remove volumes
+
+# ── Logs ────────────────────────────────────────────────────────
+docker compose logs            # All service logs
+docker compose logs api        # API logs only
+docker compose logs -f         # Follow (live) logs
+
+# ── Status ──────────────────────────────────────────────────────
+docker compose ps              # List running containers
+docker ps                      # All Docker containers
+
+# ── Rebuild single service ───────────────────────────────────────
+docker compose build api       # Rebuild API only
+docker compose up --build api  # Rebuild + restart API
+
+# ── Push to Docker Hub ──────────────────────────────────────────
+$env:PATH += ";C:\Program Files\Docker\Docker\resources\bin"
+docker build -f Dockerfile.api -t oussemagd/online-shopper-api:latest .
+docker push oussemagd/online-shopper-api:latest
+```
+
+### Weekly Push Workflow (Code → Docker → GitHub)
+
+```bash
+# Step 1: Build and tag
+docker build -f Dockerfile.api -t oussemagd/online-shopper-api:latest -t oussemagd/online-shopper-api:week6 .
+
+# Step 2: Push to Docker Hub
+$env:PATH += ";C:\Program Files\Docker\Docker\resources\bin"
+docker push oussemagd/online-shopper-api:latest
+docker push oussemagd/online-shopper-api:week6
+
+# Step 3: Push to GitHub
+git add .
+git commit -m "Week 6: Docker compose orchestration"
+git push origin main
+```
+
+### Docker Hub
+Image: **[oussemagd/online-shopper-api](https://hub.docker.com/r/oussemagd/online-shopper-api)**
+
+```bash
+# Anyone can run the API with just:
+docker run -p 8000:8000 oussemagd/online-shopper-api:latest
+```
+
+---
+
+## 🛠️ Technologies
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Data | Pandas, NumPy | Processing |
+| Visualization | Matplotlib, Seaborn, Recharts | Charts |
+| ML | Scikit-learn, XGBoost | Modeling |
+| Imbalance | imbalanced-learn (SMOTE) | Class balancing |
+| Tuning | GridSearchCV | Hyperparameter optimization |
+| Tracking | MLflow | Experiment logging |
+| API | FastAPI + Uvicorn | REST backend |
+| Validation | Pydantic v2 | Input validation |
+| Frontend | React 18 + Vite | Dashboard UI |
+| Containerization | Docker + docker-compose | Deployment |
+
+---
+
+## 📈 Evaluation Alignment
+
+| Criterion | Weight | Implementation |
+|-----------|--------|---------------|
+| Data Pipeline | 20% | EDA (`eda.ipynb`), SMOTE (`preprocessing.py`) |
+| ML Excellence | 30% | GridSearchCV + MLflow (`modeling.py`, `train_models.py`) |
+| API & UI | 30% | FastAPI (`code/app.py`) + React Dashboard (`frontend/`) |
+| Deployment | 20% | `docker-compose.yml`, `Dockerfile.api`, `Dockerfile.frontend` |
 
 ---
 
 ## 📚 References
 
-- Sakar, C.O., Polat, S.O., Katircioglu, M. et al. Neural Comput & Applic (2019). [Real-time prediction of online shoppers' purchasing intention using multilayer perceptron and LSTM recurrent neural networks](https://link.springer.com/article/10.1007/s00521-018-3523-0)
-- UCI Machine Learning Repository: [Online Shoppers Purchasing Intention Dataset](https://archive.ics.uci.edu/ml/datasets/Online+Shoppers+Purchasing+Intention+Dataset)
+- Sakar et al. (2019). [Real-time prediction of online shoppers' purchasing intention](https://link.springer.com/article/10.1007/s00521-018-3523-0)
+- [UCI Online Shoppers Purchasing Intention Dataset](https://archive.ics.uci.edu/ml/datasets/Online+Shoppers+Purchasing+Intention+Dataset)
 
 ---
 
-**Last Updated**: Week 3 - February 2026
+**Last Updated:** Weeks 1–6 · March 2026  
+**Author:** Oussema Ferchichi | Python for Data Science – Guided ML Course
